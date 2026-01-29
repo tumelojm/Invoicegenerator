@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Professional Invoice Generator</h1>
+            <p>Create professional invoices in seconds</p>
+        </header>
+
+        <form id="invoiceForm">
+            <!-- Invoice Details -->
+            <section class="form-section">
+                <h2>Invoice Information</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="invoice_number">Invoice Number *</label>
+                        <input type="text" id="invoice_number" name="invoice_number" required placeholder="0015">
+                    </div>
+                    <div class="form-group">
+                        <label for="issue_date">Issue Date *</label>
+                        <input type="date" id="issue_date" name="issue_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date *</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+                </div>
+            </section>
+
+            <!-- From/To Details -->
+            <section class="form-section">
+                <h2>Billing Information</h2>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="from_details">From (Your Details) *</label>
+                        <textarea id="from_details" name="from_details" rows="5" required placeholder="Your Name&#10;Street Address&#10;City, Postal Code&#10;Email&#10;Phone"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="to_details">To (Client Details) *</label>
+                        <textarea id="to_details" name="to_details" rows="5" required placeholder="Client Name&#10;Street Address&#10;City, Postal Code&#10;Email&#10;Phone"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services -->
+            <section class="form-section">
+                <h2>Services/Items</h2>
+                <div id="servicesContainer">
+                    <div class="service-item">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Service Name *</label>
+                                <input type="text" class="service-name" required placeholder="Data Services">
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity *</label>
+                                <input type="number" class="service-quantity" value="1" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Price (R) *</label>
+                                <input type="number" class="service-price" step="0.01" min="0" required placeholder="700.00">
+                            </div>
+                            <div class="form-group">
+                                <label>Tax (R)</label>
+                                <input type="number" class="service-tax" step="0.01" min="0" value="0" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>Description</label>
+                                <textarea class="service-description" rows="3" placeholder="Service description (one line per item)"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-remove" onclick="removeService(this)">Remove Service</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-secondary" onclick="addService()">+ Add Another Service</button>
+            </section>
+
+            <!-- Bank Details -->
+            <section class="form-section">
+                <h2>Bank Details</h2>
+                <div class="form-group full-width">
+                    <label for="bank_details">Bank Information *</label>
+                    <textarea id="bank_details" name="bank_details" rows="6" required placeholder="Account Holder: Your Name&#10;Account Type: Current Account&#10;Bank Name&#10;Branch Code: 000000&#10;BIC/SWIFT: XXXXXXX&#10;Account Number: 00000000000"></textarea>
+                </div>
+            </section>
+
+            <!-- Totals Summary -->
+            <section class="form-section totals-section">
+                <h2>Invoice Summary</h2>
+                <div class="totals-display">
+                    <div class="total-row">
+                        <span>Subtotal:</span>
+                        <span id="displaySubtotal">R 0.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span>Tax:</span>
+                        <span id="displayTax">R 0.00</span>
+                    </div>
+                    <div class="total-row total-final">
+                        <span><strong>Total:</strong></span>
+                        <span id="displayTotal"><strong>R 0.00</strong></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-calculate" onclick="calculateTotals()">Calculate Totals</button>
+            </section>
+
+            <!-- Submit -->
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Generate Invoice PDF</button>
+            </div>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
