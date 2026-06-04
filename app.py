@@ -131,15 +131,6 @@ class NumberedCanvas(canvas.Canvas):
 def generate_pdf(inv, is_quote=False):
     """
     Build a professional invoice / quote PDF and return raw bytes.
-
-    inv keys:
-        doc_number, issue_date, due_date, currency_symbol,
-        from (list of str), to (list of str),
-        services  [{ name, description (list), quantity, unit_price, tax, total }],
-        subtotal, tax, total,
-        bank_details (list of str),   ← optional
-        notes (str),                   ← optional
-        payment_terms (str),           ← optional
     """
     buf = BytesIO()
     doc_type = "QUOTE" if is_quote else "INVOICE"
@@ -256,7 +247,6 @@ def generate_pdf(inv, is_quote=False):
     svc_tbl = Table(rows, colWidths=col_w, repeatRows=1)
     row_count = len(rows)
     svc_tbl.setStyle(TableStyle([
-        # Header
         ('BACKGROUND',    (0, 0), (-1, 0),          ACCENT),
         ('ROWBACKGROUNDS',(0, 1), (-1, row_count-1), [WHITE, LIGHT_GREY]),
         ('GRID',          (0, 0), (-1, -1),          0.4, colors.HexColor('#D1D5DB')),
@@ -273,7 +263,6 @@ def generate_pdf(inv, is_quote=False):
     story.append(Spacer(1, 5*mm))
 
     # ── 4. TOTALS + BANK DETAILS ─────────────────────────────────────────────
-    # Totals block (right-aligned)
     totals_data = [
         [Paragraph("Subtotal (Excl. VAT)", st['total_label']),
          Paragraph(_fmt_zar(inv['subtotal']),  st['total_value'])],
@@ -313,7 +302,6 @@ def generate_pdf(inv, is_quote=False):
         ('BOTTOMPADDING',(0,0), (-1,-1), 0),
     ]))
 
-    # Bank details block (left side)
     bank_parts = []
     if inv.get('bank_details'):
         bank_parts.append(Paragraph("BANKING DETAILS", st['bank_label']))
@@ -349,12 +337,13 @@ def generate_pdf(inv, is_quote=False):
         st['footer']
     ))
 
-    # ── Build ─────────────────────────────────────────────────────────────────
-    def make_canvas(filename, doc):
-        return NumberedCanvas(filename,
-                               pagesize=A4,
-                               doc_type=doc_type,
-                               doc_number=inv['doc_number'])
+    # ── Build (Fixed signature with context forwarding) ─────────────────────
+    def make_canvas(filename, **kwargs):
+        kwargs.update({
+            'doc_type': doc_type,
+            'doc_number': inv['doc_number']
+        })
+        return NumberedCanvas(filename, **kwargs)
 
     doc.build(story, canvasmaker=make_canvas)
     buf.seek(0)
