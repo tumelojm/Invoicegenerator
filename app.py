@@ -307,7 +307,7 @@ def generate_pdf(inv, is_quote=False, billing_mode='standard'):
         st['footer']
     ))
 
-    def make_canvas(filename, doc):
+    def make_canvas(filename, **kwargs):
         return NumberedCanvas(filename, pagesize=A4,
                                doc_type=doc_type, doc_number=inv['doc_number'])
 
