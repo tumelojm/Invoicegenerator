@@ -4,599 +4,453 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Invoice & Quote Generator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --navy:   #1A3A5C;
-  --blue:   #2E6DA4;
-  --blue-lt:#E8EFF6;
-  --ink:    #0D0D0D;
-  --mid:    #6B7280;
-  --border: #E5E7EB;
-  --surface:#F9FAFB;
-  --white:  #FFFFFF;
-  --green:  #059669;
-  --red:    #DC2626;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.05);
+  --navy:#1A3A5C; --blue:#2E6DA4; --blue-lt:#E8EFF6;
+  --ink:#0D0D0D; --mid:#6B7280; --border:#E5E7EB;
+  --surface:#F9FAFB; --white:#FFFFFF; --red:#DC2626;
+  --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: #F1F4F8;
-  color: var(--ink);
-  min-height: 100vh;
-  font-size: 14px;
-  line-height: 1.6;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#F1F4F8;color:var(--ink);min-height:100vh;font-size:14px;line-height:1.6}
+.app-shell{display:grid;grid-template-columns:260px 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+.topbar{grid-column:1/-1;background:var(--navy);color:white;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.sidebar{background:var(--white);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:calc(100vh - 56px);overflow-y:auto}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);padding:8px 16px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13.5px;color:var(--ink);transition:background .15s}
+.nav-item:hover{background:var(--surface)}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500}
+.main{padding:32px 36px;overflow-y:auto}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.page-subtitle{font-size:13px;color:var(--mid);margin-top:2px}
 
-/* ── Layout ── */
-.app-shell {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  grid-template-rows: auto 1fr;
-  min-height: 100vh;
-}
-.topbar {
-  grid-column: 1 / -1;
-  background: var(--navy);
-  color: white;
-  padding: 0 28px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.topbar-brand {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 600; font-size: 15px; letter-spacing: .02em;
-}
-.topbar-brand svg { opacity: .9; }
-.topbar-actions { display: flex; gap: 10px; align-items: center; }
+/* Mode selector — prominent card at top */
+.mode-selector{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.mode-selector-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:12px}
+.mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode-card{border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative}
+.mode-card:hover{border-color:var(--blue);background:var(--blue-lt)}
+.mode-card.selected{border-color:var(--blue);background:var(--blue-lt)}
+.mode-card input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.mode-card-title{font-weight:600;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.mode-card.selected .mode-card-title{color:var(--blue)}
+.mode-card-desc{font-size:12px;color:var(--mid);line-height:1.5}
+.mode-dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;transition:all .15s}
+.mode-card.selected .mode-dot{background:var(--blue);border-color:var(--blue)}
 
-.sidebar {
-  background: var(--white);
-  border-right: 1px solid var(--border);
-  padding: 24px 0;
-  position: sticky;
-  top: 0;
-  height: calc(100vh - 56px);
-  overflow-y: auto;
-}
-.sidebar-section { padding: 0 16px 8px; }
-.sidebar-label {
-  font-size: 10px; font-weight: 600; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--mid);
-  padding: 8px 10px 4px;
-}
-.nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: 8px; cursor: pointer;
-  font-size: 13.5px; color: var(--ink);
-  transition: background .15s;
-}
-.nav-item:hover { background: var(--surface); }
-.nav-item.active { background: var(--blue-lt); color: var(--blue); font-weight: 500; }
-.nav-item svg { flex-shrink: 0; opacity: .7; }
-.nav-item.active svg { opacity: 1; }
+/* Doc type + header actions */
+.doc-toggle{display:inline-flex;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:var(--white)}
+.doc-toggle input{display:none}
+.doc-toggle label{padding:8px 22px;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;color:var(--mid)}
+.doc-toggle input:checked + label{background:var(--navy);color:white}
 
-.main {
-  padding: 32px 36px;
-  overflow-y: auto;
-}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr}
+.form-grid.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-span2{grid-column:span 2}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mid)}
+.field input,.field textarea,.field select{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:var(--white);color:var(--ink);transition:border-color .15s,box-shadow .15s;outline:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,109,164,.12)}
+.field textarea{resize:vertical;min-height:72px}
+.field-mono input,.field-mono textarea{font-family:'DM Mono',monospace;font-size:13px}
 
-/* ── Page header ── */
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 28px;
-}
-.page-title { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
-.page-subtitle { font-size: 13px; color: var(--mid); margin-top: 2px; }
+/* hourly rate banner */
+.rate-banner{background:var(--blue-lt);border:1px solid var(--blue);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:13px;color:var(--blue)}
+.rate-banner strong{font-weight:600}
 
-/* ── Doc-type toggle ── */
-.doc-toggle {
-  display: inline-flex;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--white);
-}
-.doc-toggle input { display: none; }
-.doc-toggle label {
-  padding: 8px 22px;
-  font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: background .15s, color .15s;
-  color: var(--mid);
-}
-.doc-toggle input:checked + label {
-  background: var(--navy); color: white;
-}
+/* services table */
+.services-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px}
+.services-table th{background:var(--navy);color:white;padding:9px 10px;text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.services-table th:first-child{border-radius:8px 0 0 8px}
+.services-table th:last-child{border-radius:0 8px 8px 0}
+.services-table td{padding:0;border-bottom:1px solid var(--border);vertical-align:top}
+.services-table tr:last-child td{border-bottom:none}
+.services-table td input,.services-table td textarea{border:none;outline:none;width:100%;padding:9px 10px;font-family:inherit;font-size:13px;background:transparent;color:var(--ink)}
+.services-table td textarea{resize:none;min-height:36px}
+.services-table td input:focus,.services-table td textarea:focus{background:var(--blue-lt)}
+.services-table tr:hover td{background:#FAFBFF}
+.services-table tr:hover td input,.services-table tr:hover td textarea{background:#FAFBFF}
+.num-col{text-align:right}
+.num-col input{text-align:right}
+.del-btn{background:none;border:none;cursor:pointer;color:#D1D5DB;padding:8px 6px;transition:color .15s;display:flex;align-items:center}
+.del-btn:hover{color:var(--red)}
 
-/* ── Card sections ── */
-.card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow);
-}
-.card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px; padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-.card-title {
-  font-size: 13px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .08em; color: var(--navy);
-  display: flex; align-items: center; gap: 8px;
-}
-.card-title svg { color: var(--blue); }
+/* totals */
+.totals-panel{display:flex;justify-content:flex-end}
+.totals-box{width:300px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.totals-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13.5px}
+.totals-row:last-child{border-bottom:none}
+.totals-row .lbl{color:var(--mid)}
+.totals-row .val{font-family:'DM Mono',monospace;font-size:13px}
+.totals-row.grand{background:var(--navy);color:white;font-weight:600}
+.totals-row.hours-summary{background:#F0F9F4;color:#065F46;font-size:12.5px;font-weight:500}
 
-/* ── Form grid ── */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-.form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
-.form-span2 { grid-column: span 2; }
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--navy);color:white}
+.btn-primary:hover{background:#142D4A}
+.btn-secondary{background:var(--white);color:var(--ink);border-color:var(--border)}
+.btn-secondary:hover{background:var(--surface)}
+.btn-ghost{background:none;color:var(--blue);border-color:var(--blue-lt)}
+.btn-ghost:hover{background:var(--blue-lt)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-blue{background:var(--blue-lt);color:var(--blue)}
+.badge-green{background:#D1FAE5;color:#065F46}
 
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field label {
-  font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--mid);
-}
-.field input, .field textarea, .field select {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-family: inherit; font-size: 13.5px;
-  background: var(--white); color: var(--ink);
-  transition: border-color .15s, box-shadow .15s;
-  outline: none;
-}
-.field input:focus, .field textarea:focus, .field select:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(46,109,164,.12);
-}
-.field textarea { resize: vertical; min-height: 72px; }
-.field-mono input { font-family: 'DM Mono', monospace; font-size: 13px; }
+/* rate card templates */
+.rate-card-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;font-size:13px}
+.rate-card-item:hover{background:var(--blue-lt);border-color:var(--blue)}
+.rate-card-item .rc-name{font-weight:500}
+.rate-card-item .rc-meta{font-size:11.5px;color:var(--mid)}
+.rate-card-item .rc-add{color:var(--blue);font-size:12px;font-weight:500}
 
-/* ── Services table ── */
-.services-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-bottom: 12px;
-}
-.services-table th {
-  background: var(--navy); color: white;
-  padding: 9px 10px; text-align: left;
-  font-size: 10.5px; font-weight: 600;
-  letter-spacing: .07em; text-transform: uppercase;
-}
-.services-table th:first-child { border-radius: 8px 0 0 8px; }
-.services-table th:last-child  { border-radius: 0 8px 8px 0; }
-.services-table td {
-  padding: 0;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.services-table tr:last-child td { border-bottom: none; }
-.services-table td input, .services-table td textarea {
-  border: none; outline: none; width: 100%;
-  padding: 9px 10px; font-family: inherit; font-size: 13px;
-  background: transparent; color: var(--ink);
-}
-.services-table td textarea { resize: none; min-height: 36px; }
-.services-table td input:focus, .services-table td textarea:focus {
-  background: var(--blue-lt);
-}
-.services-table tr:hover td { background: #FAFBFF; }
-.services-table tr:hover td input, .services-table tr:hover td textarea { background: #FAFBFF; }
-.services-table .num-col { text-align: right; }
-.services-table .num-col input { text-align: right; }
-.services-table .del-col { width: 36px; text-align: center; }
-.del-btn {
-  background: none; border: none; cursor: pointer;
-  color: #D1D5DB; padding: 8px 6px;
-  transition: color .15s;
-  display: flex; align-items: center;
-}
-.del-btn:hover { color: var(--red); }
-
-/* ── Totals ── */
-.totals-panel {
-  display: flex; justify-content: flex-end;
-}
-.totals-box {
-  width: 300px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.totals-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13.5px;
-}
-.totals-row:last-child { border-bottom: none; }
-.totals-row .lbl { color: var(--mid); }
-.totals-row .val { font-family: 'DM Mono', monospace; font-size: 13px; }
-.totals-row.grand {
-  background: var(--navy); color: white;
-  font-weight: 600;
-}
-.totals-row.grand .val { font-size: 14px; }
-
-/* ── Buttons ── */
-.btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px; border-radius: 8px;
-  font-family: inherit; font-size: 13px; font-weight: 500;
-  cursor: pointer; border: 1.5px solid transparent;
-  transition: all .15s; white-space: nowrap;
-}
-.btn-primary { background: var(--navy); color: white; }
-.btn-primary:hover { background: #142D4A; }
-.btn-secondary { background: var(--white); color: var(--ink); border-color: var(--border); }
-.btn-secondary:hover { background: var(--surface); }
-.btn-blue { background: var(--blue); color: white; }
-.btn-blue:hover { background: #265d8f; }
-.btn-ghost { background: none; color: var(--blue); border-color: var(--blue-lt); }
-.btn-ghost:hover { background: var(--blue-lt); }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
-.btn-icon { padding: 8px; border-radius: 8px; }
-.btn[disabled] { opacity: .5; cursor: not-allowed; }
-
-/* ── Status badge ── */
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
-}
-.badge-blue  { background: var(--blue-lt); color: var(--blue); }
-.badge-green { background: #D1FAE5; color: #065F46; }
-.badge-amber { background: #FEF3C7; color: #92400E; }
-
-/* ── Toast ── */
-.toast-wrap {
-  position: fixed; bottom: 28px; right: 28px; z-index: 999;
-  display: flex; flex-direction: column; gap: 8px;
-  pointer-events: none;
-}
-.toast {
-  background: var(--ink); color: white;
-  padding: 12px 18px; border-radius: 10px;
-  font-size: 13.5px; display: flex; align-items: center; gap: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
-  pointer-events: auto;
-  animation: toastIn .25s ease;
-}
-.toast.success { background: #064E3B; }
-.toast.error   { background: #7F1D1D; }
-@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ── Loading overlay ── */
-.loading-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(255,255,255,.65);
-  z-index: 500;
-  align-items: center; justify-content: center;
-  flex-direction: column; gap: 14px;
-}
-.loading-overlay.active { display: flex; }
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--blue);
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 13px; color: var(--mid); }
-
-/* ── Misc ── */
-.divider { height: 1px; background: var(--border); margin: 8px 0 20px; }
-.vat-hint { font-size: 11px; color: var(--mid); margin-top: 3px; }
-.add-row-bar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 0;
-}
-.section-sep { margin: 0 0 20px; }
+.toast-wrap{position:fixed;bottom:28px;right:28px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--ink);color:white;padding:12px 18px;border-radius:10px;font-size:13.5px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:auto;animation:toastIn .25s ease}
+.toast.success{background:#064E3B}
+.toast.error{background:#7F1D1D}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.65);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loading-overlay.active{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--mid)}
+.add-row-bar{display:flex;align-items:center;gap:10px;padding:8px 0}
 </style>
 </head>
 <body>
-
 <div class="app-shell">
 
-  <!-- Topbar -->
-  <header class="topbar">
-    <div class="topbar-brand">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-      </svg>
-      InvoicePro
+<header class="topbar">
+  <div class="topbar-brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    InvoicePro
+  </div>
+  <span class="badge badge-blue">South Africa · ZAR</span>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">Create</div>
+  <div class="nav-item active" id="nav-create" onclick="showPage('create')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    New Document
+  </div>
+  <div class="sidebar-label" style="margin-top:12px">History</div>
+  <div class="nav-item" id="nav-history" onclick="showPage('history')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Recent Documents
+  </div>
+  <div class="sidebar-label" style="margin-top:12px">Settings</div>
+  <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Business Profile
+  </div>
+  <div class="nav-item" id="nav-ratecard" onclick="showPage('ratecard')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    Rate Card
+  </div>
+</nav>
+
+<!-- CREATE PAGE -->
+<main class="main" id="page-create">
+  <div class="page-header">
+    <div>
+      <div class="page-title">New Document</div>
+      <div class="page-subtitle">Create a professional invoice or quote</div>
     </div>
-    <div class="topbar-actions">
-      <span class="badge badge-blue">South Africa · ZAR</span>
-    </div>
-  </header>
-
-  <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="sidebar-label">Create</div>
-    <div class="sidebar-section">
-      <div class="nav-item active" onclick="showPage('create')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        New Document
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="doc-toggle">
+        <input type="radio" name="doctype" id="dt-invoice" value="invoice" checked>
+        <label for="dt-invoice">Invoice</label>
+        <input type="radio" name="doctype" id="dt-quote" value="quote">
+        <label for="dt-quote">Quote</label>
       </div>
-    </div>
-    <div class="sidebar-label">History</div>
-    <div class="sidebar-section">
-      <div class="nav-item" id="nav-history" onclick="showPage('history')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Recent Documents
-      </div>
-    </div>
-    <div class="sidebar-label" style="margin-top:16px">Saved Info</div>
-    <div class="sidebar-section">
-      <div class="nav-item" onclick="showPage('settings')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-        Business Profile
-      </div>
-    </div>
-  </nav>
-
-  <!-- Main -->
-  <main class="main" id="page-create">
-
-    <div class="page-header">
-      <div>
-        <div class="page-title">New Document</div>
-        <div class="page-subtitle">Create a professional invoice or quote in seconds</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <div class="doc-toggle">
-          <input type="radio" name="doctype" id="dt-invoice" value="invoice" checked>
-          <label for="dt-invoice">Invoice</label>
-          <input type="radio" name="doctype" id="dt-quote" value="quote">
-          <label for="dt-quote">Quote</label>
-        </div>
-        <button class="btn btn-primary" onclick="generateDoc()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Generate PDF
-        </button>
-      </div>
-    </div>
-
-    <!-- Doc Meta -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Document Details
-        </div>
-      </div>
-      <div class="form-grid three">
-        <div class="field field-mono">
-          <label>Document Number</label>
-          <input type="text" id="doc_number" value="INV-2025-001" placeholder="INV-2025-001">
-        </div>
-        <div class="field">
-          <label>Issue Date</label>
-          <input type="date" id="issue_date">
-        </div>
-        <div class="field">
-          <label>Due Date</label>
-          <input type="date" id="due_date">
-        </div>
-        <div class="field">
-          <label>Payment Terms</label>
-          <select id="payment_terms">
-            <option value="Net 30">Net 30 days</option>
-            <option value="Net 14">Net 14 days</option>
-            <option value="Net 7">Net 7 days</option>
-            <option value="Due on receipt">Due on receipt</option>
-            <option value="COD">COD</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>VAT Rate</label>
-          <select id="vat_rate" onchange="recalcAll()">
-            <option value="0.15" selected>15% (Standard)</option>
-            <option value="0">0% (Zero-rated)</option>
-            <option value="custom">Custom</option>
-          </select>
-        </div>
-        <div class="field field-mono" id="custom-vat-field" style="display:none">
-          <label>Custom VAT %</label>
-          <input type="number" id="custom_vat" value="15" min="0" max="100" step="0.5" onchange="recalcAll()">
-        </div>
-      </div>
-    </div>
-
-    <!-- From / To -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Parties
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="loadProfile()">Load saved profile</button>
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label>From (Your Business)</label>
-          <textarea id="from_details" rows="5" placeholder="Company Name&#10;123 Business Street&#10;Johannesburg, 2001&#10;VAT No: 4123456789&#10;info@company.co.za"></textarea>
-        </div>
-        <div class="field">
-          <label>Bill To (Client)</label>
-          <textarea id="to_details" rows="5" placeholder="Client Company&#10;456 Client Road&#10;Cape Town, 8001&#10;contact@client.co.za"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- Line Items -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          Line Items
-        </div>
-      </div>
-
-      <table class="services-table" id="services-table">
-        <thead>
-          <tr>
-            <th style="width:35%">Description</th>
-            <th style="width:12%">Notes</th>
-            <th style="width:7%" class="num-col">Qty</th>
-            <th style="width:13%" class="num-col">Unit Price (R)</th>
-            <th style="width:11%" class="num-col">Excl. VAT</th>
-            <th style="width:10%" class="num-col">VAT (R)</th>
-            <th style="width:11%" class="num-col">Total (R)</th>
-            <th class="del-col"></th>
-          </tr>
-        </thead>
-        <tbody id="services-body">
-          <!-- rows injected by JS -->
-        </tbody>
-      </table>
-
-      <div class="add-row-bar">
-        <button class="btn btn-ghost btn-sm" onclick="addServiceRow()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Line Item
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="addServiceRow('heading')">
-          + Section Heading
-        </button>
-      </div>
-
-      <div class="totals-panel" style="margin-top:20px">
-        <div class="totals-box">
-          <div class="totals-row">
-            <span class="lbl">Subtotal (Excl. VAT)</span>
-            <span class="val" id="t-subtotal">R 0.00</span>
-          </div>
-          <div class="totals-row">
-            <span class="lbl">VAT</span>
-            <span class="val" id="t-vat">R 0.00</span>
-          </div>
-          <div class="totals-row grand">
-            <span>Total Due</span>
-            <span class="val" id="t-total">R 0.00</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bank Details + Notes -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-          Banking &amp; Notes
-        </div>
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label>Banking Details</label>
-          <textarea id="bank_details" rows="5" placeholder="Bank: First National Bank&#10;Account Name: Your Company (Pty) Ltd&#10;Account Number: 62001234567&#10;Branch Code: 250655&#10;Account Type: Business Cheque&#10;Reference: Invoice Number"></textarea>
-        </div>
-        <div class="field">
-          <label>Notes / Payment Instructions</label>
-          <textarea id="notes" rows="5" placeholder="Please quote the invoice number as your payment reference.&#10;&#10;This invoice is subject to our standard terms and conditions."></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- Generate bar -->
-    <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:48px">
-      <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
       <button class="btn btn-primary" onclick="generateDoc()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Generate &amp; Download PDF
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Generate PDF
       </button>
     </div>
+  </div>
 
-  </main><!-- /page-create -->
-
-  <!-- History page (hidden) -->
-  <main class="main" id="page-history" style="display:none">
-    <div class="page-header">
-      <div><div class="page-title">Recent Documents</div></div>
+  <!-- BILLING MODE SELECTOR -->
+  <div class="mode-selector">
+    <div class="mode-selector-label">Billing Mode — select before adding line items</div>
+    <div class="mode-cards">
+      <label class="mode-card selected" id="mc-standard" onclick="setBillingMode('standard')">
+        <input type="radio" name="billing_mode" value="standard" checked>
+        <div class="mode-card-title">
+          <span class="mode-dot"></span>
+          Standard (Qty × Price)
+        </div>
+        <div class="mode-card-desc">Fixed price per unit. Use for products, packages, or flat-rate services.</div>
+      </label>
+      <label class="mode-card" id="mc-hourly" onclick="setBillingMode('hourly')">
+        <input type="radio" name="billing_mode" value="hourly">
+        <div class="mode-card-title">
+          <span class="mode-dot"></span>
+          Hourly (Hours × Rate)
+        </div>
+        <div class="mode-card-desc">Time-based billing. Set a default rate and override per line if needed.</div>
+      </label>
     </div>
-    <div id="history-list">
-      <div style="color:var(--mid);font-size:13px;padding:40px 0;text-align:center">
-        No documents generated yet.
+  </div>
+
+  <!-- DOC DETAILS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Document Details
       </div>
     </div>
-  </main>
-
-  <!-- Settings page (hidden) -->
-  <main class="main" id="page-settings" style="display:none">
-    <div class="page-header">
-      <div><div class="page-title">Business Profile</div><div class="page-subtitle">Saved automatically as you type</div></div>
-      <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Profile</button>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Your Business Details</div></div>
-      <div class="form-grid">
-        <div class="field form-span2">
-          <label>Business Info (paste into From field)</label>
-          <textarea id="saved_from" rows="6" placeholder="Company Name&#10;Street Address&#10;City, Postal Code&#10;VAT No: xxxx&#10;email@company.co.za"></textarea>
-        </div>
-        <div class="field form-span2">
-          <label>Default Banking Details</label>
-          <textarea id="saved_bank" rows="5" placeholder="Bank: FNB&#10;Account: ..."></textarea>
-        </div>
+    <div class="form-grid three" id="details-grid">
+      <div class="field field-mono">
+        <label>Document Number</label>
+        <input type="text" id="doc_number" value="INV-2025-001">
+      </div>
+      <div class="field">
+        <label>Issue Date</label>
+        <input type="date" id="issue_date">
+      </div>
+      <div class="field">
+        <label>Due Date</label>
+        <input type="date" id="due_date">
+      </div>
+      <div class="field">
+        <label>Payment Terms</label>
+        <select id="payment_terms">
+          <option value="Net 30">Net 30 days</option>
+          <option value="Net 14">Net 14 days</option>
+          <option value="Net 7">Net 7 days</option>
+          <option value="Due on receipt">Due on receipt</option>
+          <option value="COD">COD</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>VAT Rate</label>
+        <select id="vat_rate" onchange="vatChanged()">
+          <option value="0.15" selected>15% (Standard)</option>
+          <option value="0">0% (Zero-rated)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <!-- hourly: default rate field (hidden in standard mode) -->
+      <div class="field field-mono" id="default-rate-field" style="display:none">
+        <label>Default Rate (R/hr)</label>
+        <input type="number" id="default_rate" value="500" min="0" step="50" oninput="recalcAll()">
+      </div>
+      <div class="field field-mono" id="custom-vat-field" style="display:none">
+        <label>Custom VAT %</label>
+        <input type="number" id="custom_vat" value="15" min="0" max="100" step="0.5" oninput="recalcAll()">
       </div>
     </div>
-  </main>
+  </div>
 
-</div><!-- /app-shell -->
+  <!-- PARTIES -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Parties
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadProfile()">Load saved profile</button>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>From (Your Business)</label>
+        <textarea id="from_details" rows="5" placeholder="Company Name&#10;123 Business Street&#10;Johannesburg, 2001&#10;VAT No: 4123456789&#10;info@company.co.za"></textarea>
+      </div>
+      <div class="field">
+        <label>Bill To (Client)</label>
+        <textarea id="to_details" rows="5" placeholder="Client Company&#10;456 Client Road&#10;Cape Town, 8001&#10;contact@client.co.za"></textarea>
+      </div>
+    </div>
+  </div>
 
-<!-- Loading -->
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">Generating PDF…</div>
+  <!-- LINE ITEMS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Line Items
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" id="btn-ratecard-add" style="display:none" onclick="showRateCardPicker()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          From Rate Card
+        </button>
+      </div>
+    </div>
+
+    <!-- rate banner (hourly mode) -->
+    <div class="rate-banner" id="rate-banner" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Hourly mode — default rate: <strong id="rate-banner-val">R500/hr</strong>. Override per line as needed.</span>
+    </div>
+
+    <table class="services-table" id="services-table">
+      <thead id="table-head"></thead>
+      <tbody id="services-body"></tbody>
+    </table>
+
+    <div class="add-row-bar">
+      <button class="btn btn-ghost btn-sm" onclick="addServiceRow()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Line Item
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="addServiceRow('heading')">+ Section Heading</button>
+    </div>
+
+    <div class="totals-panel" style="margin-top:20px">
+      <div class="totals-box">
+        <div class="totals-row hours-summary" id="hours-summary-row" style="display:none">
+          <span class="lbl">Total Hours</span>
+          <span class="val" id="t-hours">0.0 hrs</span>
+        </div>
+        <div class="totals-row"><span class="lbl">Subtotal (Excl. VAT)</span><span class="val" id="t-subtotal">R 0.00</span></div>
+        <div class="totals-row"><span class="lbl">VAT</span><span class="val" id="t-vat">R 0.00</span></div>
+        <div class="totals-row grand"><span>Total Due</span><span class="val" id="t-total">R 0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANKING + NOTES + ADDONS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Banking, Notes &amp; Optional Add-ons
+      </div>
+    </div>
+    <div class="form-grid three">
+      <div class="field">
+        <label>Banking Details</label>
+        <textarea id="bank_details" rows="5" placeholder="Bank: FNB&#10;Account Name: Your Company&#10;Account Number: 62001234567&#10;Branch Code: 250655&#10;Reference: Invoice Number"></textarea>
+      </div>
+      <div class="field">
+        <label>Notes / Payment Instructions</label>
+        <textarea id="notes" rows="5" placeholder="Please quote the invoice number as your payment reference."></textarea>
+      </div>
+      <div class="field">
+        <label>Optional Add-ons (not included)</label>
+        <textarea id="addons" rows="5" placeholder="Conversions API (Meta/TikTok) — R800–1,200 per platform&#10;Dashboard build (Looker Studio) — R2,500–4,000&#10;Cross-platform QA — quote on request"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:48px">
+    <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+    <button class="btn btn-primary" onclick="generateDoc()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Generate &amp; Download PDF
+    </button>
+  </div>
+</main>
+
+<!-- HISTORY PAGE -->
+<main class="main" id="page-history" style="display:none">
+  <div class="page-header"><div><div class="page-title">Recent Documents</div></div></div>
+  <div id="history-list"><div style="color:var(--mid);font-size:13px;padding:40px 0;text-align:center">No documents generated yet.</div></div>
+</main>
+
+<!-- SETTINGS PAGE -->
+<main class="main" id="page-settings" style="display:none">
+  <div class="page-header">
+    <div><div class="page-title">Business Profile</div><div class="page-subtitle">Auto-fills From and Banking fields</div></div>
+    <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Profile</button>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Your Business Details</div></div>
+    <div class="form-grid">
+      <div class="field form-span2">
+        <label>Business Info</label>
+        <textarea id="saved_from" rows="6" placeholder="Company Name&#10;Street Address&#10;City, Postal Code&#10;VAT No: xxxx&#10;email@company.co.za"></textarea>
+      </div>
+      <div class="field form-span2">
+        <label>Default Banking Details</label>
+        <textarea id="saved_bank" rows="5"></textarea>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- RATE CARD PAGE -->
+<main class="main" id="page-ratecard" style="display:none">
+  <div class="page-header">
+    <div><div class="page-title">Rate Card</div><div class="page-subtitle">Your standard services — click to add to current document</div></div>
+    <button class="btn btn-primary btn-sm" onclick="saveRateCard()">Save Rate Card</button>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Standard Services</div>
+      <button class="btn btn-ghost btn-sm" onclick="addRateCardEntry()">+ Add Service</button>
+    </div>
+    <div id="rate-card-editor"></div>
+  </div>
+</main>
+
+</div><!-- app-shell -->
+
+<!-- Rate card picker modal (inline overlay) -->
+<div id="rc-picker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:14px;width:460px;max-height:70vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-weight:600;font-size:15px">Add from Rate Card</div>
+      <button onclick="closeRcPicker()" style="background:none;border:none;cursor:pointer;color:var(--mid);font-size:18px">✕</button>
+    </div>
+    <div id="rc-picker-list"></div>
+  </div>
 </div>
 
-<!-- Toasts -->
+<div class="loading-overlay" id="loading"><div class="spinner"></div><div class="loading-text">Generating PDF…</div></div>
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
-// ── State ───────────────────────────────────────────────────────────────────
-let rowCounter = 0;
-const history  = JSON.parse(localStorage.getItem('inv_history') || '[]');
-const profile  = JSON.parse(localStorage.getItem('inv_profile') || '{}');
+// ── State ──────────────────────────────────────────────────────────────────
+let rowCounter  = 0;
+let billingMode = 'standard';
+const docHistory = JSON.parse(localStorage.getItem('inv_history') || '[]');
 
-// ── Init ────────────────────────────────────────────────────────────────────
+// Default rate card for analytics/GTM work
+const DEFAULT_RATE_CARD = [
+  { name: 'Tracking Audit',           desc: 'Full audit of current tracking state; event/conversion mapping', hours: 3.0,  rate: 500 },
+  { name: 'GTM + GA4 Setup',          desc: 'GTM container setup, dataLayer implementation, GA4 events & key conversions', hours: 3.0, rate: 500 },
+  { name: 'Meta Pixel Install',        desc: 'Pixel install + custom/standard event mapping via GTM', hours: 1.5, rate: 500 },
+  { name: 'TikTok Pixel Install',      desc: 'Pixel install + event mapping via GTM', hours: 1.5, rate: 500 },
+  { name: 'LinkedIn Insight Tag',      desc: 'Tag install + conversion action mapping via GTM', hours: 1.0, rate: 500 },
+  { name: 'Cross-Platform QA',         desc: 'Testing and verification across ad platforms and analytics', hours: 1.5, rate: 500 },
+  { name: 'Looker Studio Dashboard',   desc: 'Dashboard build across GA4, ad platforms and GSC', hours: 6.0, rate: 500 },
+  { name: 'Enhanced Conversions Setup',desc: 'Google Ads enhanced conversions implementation via GTM', hours: 2.0, rate: 500 },
+];
+
+function getRateCard() {
+  return JSON.parse(localStorage.getItem('inv_ratecard') || JSON.stringify(DEFAULT_RATE_CARD));
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const today = new Date();
   const due   = new Date(today); due.setDate(due.getDate() + 30);
   document.getElementById('issue_date').value = fmt(today);
   document.getElementById('due_date').value   = fmt(due);
-
-  if (profile.from)  document.getElementById('saved_from').value = profile.from;
-  if (profile.bank)  document.getElementById('saved_bank').value = profile.bank;
-
+  const p = JSON.parse(localStorage.getItem('inv_profile') || '{}');
+  if (p.from) document.getElementById('saved_from').value = p.from;
+  if (p.bank) document.getElementById('saved_bank').value = p.bank;
+  renderTableHead();
   addServiceRow();
   addServiceRow();
-
-  document.getElementById('vat_rate').addEventListener('change', e => {
-    document.getElementById('custom-vat-field').style.display =
-      e.target.value === 'custom' ? 'flex' : 'none';
-    recalcAll();
-  });
-
   renderHistory();
+  renderRateCardEditor();
 });
 
-function fmt(d) {
-  return d.toISOString().split('T')[0];
-}
+function fmt(d) { return d.toISOString().split('T')[0]; }
 
 function getVatRate() {
   const sel = document.getElementById('vat_rate').value;
@@ -604,122 +458,199 @@ function getVatRate() {
   return parseFloat(sel);
 }
 
-// ── Row management ──────────────────────────────────────────────────────────
-function addServiceRow(type) {
+function getDefaultRate() {
+  return parseFloat(document.getElementById('default_rate').value) || 500;
+}
+
+function vatChanged() {
+  document.getElementById('custom-vat-field').style.display =
+    document.getElementById('vat_rate').value === 'custom' ? 'flex' : 'none';
+  recalcAll();
+}
+
+// ── Billing mode ───────────────────────────────────────────────────────────
+function setBillingMode(mode) {
+  billingMode = mode;
+  document.getElementById('mc-standard').classList.toggle('selected', mode === 'standard');
+  document.getElementById('mc-hourly').classList.toggle('selected', mode === 'hourly');
+  document.getElementById('default-rate-field').style.display = mode === 'hourly' ? 'flex' : 'none';
+  document.getElementById('rate-banner').style.display = mode === 'hourly' ? 'flex' : 'none';
+  document.getElementById('hours-summary-row').style.display = mode === 'hourly' ? 'flex' : 'none';
+  document.getElementById('btn-ratecard-add').style.display = mode === 'hourly' ? 'inline-flex' : 'none';
+
+  // Clear rows and re-render header for new mode
+  document.getElementById('services-body').innerHTML = '';
+  rowCounter = 0;
+  renderTableHead();
+  addServiceRow();
+  addServiceRow();
+  updateRateBanner();
+}
+
+function updateRateBanner() {
+  if (billingMode === 'hourly') {
+    document.getElementById('rate-banner-val').textContent = `R${getDefaultRate()}/hr`;
+  }
+}
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'default_rate') updateRateBanner();
+});
+
+// ── Table header ───────────────────────────────────────────────────────────
+function renderTableHead() {
+  const thead = document.getElementById('table-head');
+  if (billingMode === 'hourly') {
+    thead.innerHTML = `<tr>
+      <th style="width:35%">Description</th>
+      <th style="width:13%">Notes</th>
+      <th style="width:8%" class="num-col">Hours</th>
+      <th style="width:11%" class="num-col">Rate/hr (R)</th>
+      <th style="width:11%" class="num-col">Excl. VAT</th>
+      <th style="width:9%" class="num-col">VAT (R)</th>
+      <th style="width:11%" class="num-col">Total (R)</th>
+      <th style="width:36px"></th>
+    </tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th style="width:33%">Description</th>
+      <th style="width:13%">Notes</th>
+      <th style="width:7%" class="num-col">Qty</th>
+      <th style="width:13%" class="num-col">Unit Price (R)</th>
+      <th style="width:11%" class="num-col">Excl. VAT</th>
+      <th style="width:10%" class="num-col">VAT (R)</th>
+      <th style="width:11%" class="num-col">Total (R)</th>
+      <th style="width:36px"></th>
+    </tr>`;
+  }
+}
+
+// ── Row management ─────────────────────────────────────────────────────────
+function addServiceRow(type, prefill) {
   const tbody = document.getElementById('services-body');
   const id = ++rowCounter;
+  const tr = document.createElement('tr');
+  tr.id = `row-${id}`;
 
   if (type === 'heading') {
-    const tr = document.createElement('tr');
-    tr.id = `row-${id}`;
     tr.innerHTML = `
       <td colspan="7" style="background:#F3F4F6">
         <input type="text" placeholder="Section heading…" style="font-weight:600;font-size:13px;color:var(--navy);background:#F3F4F6">
       </td>
-      <td class="del-col" style="background:#F3F4F6">
-        <button class="del-btn" onclick="delRow(${id})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        </button>
+      <td style="background:#F3F4F6;text-align:center">
+        <button class="del-btn" onclick="delRow(${id})">${trashIcon()}</button>
       </td>`;
     tbody.appendChild(tr);
     return;
   }
 
-  const tr = document.createElement('tr');
-  tr.id = `row-${id}`;
   tr.dataset.rowId = id;
+
+  const defRate  = getDefaultRate();
+  const ph1      = billingMode === 'hourly' ? (prefill?.hours ?? 1) : (prefill?.quantity ?? 1);
+  const ph2      = billingMode === 'hourly' ? (prefill?.rate ?? defRate) : (prefill?.unit_price ?? 0);
+  const nameVal  = prefill?.name || '';
+  const descVal  = prefill?.desc || '';
+  const label1   = billingMode === 'hourly' ? 'step=0.5' : 'step=1';
+
   tr.innerHTML = `
-    <td><input type="text" placeholder="Service or product name" oninput="rowChanged(${id})"></td>
-    <td><textarea placeholder="Optional details…" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></td>
-    <td class="num-col"><input type="number" value="1" min="0" step="1" style="width:56px" oninput="rowChanged(${id})"></td>
-    <td class="num-col"><input type="number" value="0.00" min="0" step="0.01" style="width:90px" oninput="rowChanged(${id})"></td>
-    <td class="num-col"><input type="number" readonly style="width:90px;color:var(--mid);background:var(--surface)" tabindex="-1"></td>
-    <td class="num-col"><input type="number" readonly style="width:80px;color:var(--mid);background:var(--surface)" tabindex="-1"></td>
-    <td class="num-col"><input type="number" readonly style="width:90px;font-weight:600;background:var(--surface)" tabindex="-1"></td>
-    <td class="del-col">
-      <button class="del-btn" onclick="delRow(${id})">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-      </button>
-    </td>`;
+    <td><input type="text" placeholder="Service name" value="${nameVal}" oninput="rowChanged(${id})"></td>
+    <td><textarea placeholder="Optional notes…" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${descVal}</textarea></td>
+    <td class="num-col"><input type="number" value="${ph1}" min="0" ${label1} style="width:58px" oninput="rowChanged(${id})"></td>
+    <td class="num-col"><input type="number" value="${ph2}" min="0" step="0.01" style="width:88px" oninput="rowChanged(${id})"></td>
+    <td class="num-col"><input type="number" readonly style="width:88px;color:var(--mid);background:var(--surface)" tabindex="-1"></td>
+    <td class="num-col"><input type="number" readonly style="width:78px;color:var(--mid);background:var(--surface)" tabindex="-1"></td>
+    <td class="num-col"><input type="number" readonly style="width:88px;font-weight:600;background:var(--surface)" tabindex="-1"></td>
+    <td style="text-align:center"><button class="del-btn" onclick="delRow(${id})">${trashIcon()}</button></td>`;
+
   tbody.appendChild(tr);
+  rowChanged(id);
+}
+
+function trashIcon() {
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
 }
 
 function delRow(id) {
-  const row = document.getElementById(`row-${id}`);
-  if (row) row.remove();
+  const r = document.getElementById(`row-${id}`);
+  if (r) r.remove();
   recalcAll();
 }
 
 function rowChanged(id) {
   const row = document.getElementById(`row-${id}`);
   if (!row || !row.dataset.rowId) return;
-  const inputs = row.querySelectorAll('input[type=number]');
-  const qty   = parseFloat(inputs[0].value) || 0;
-  const price = parseFloat(inputs[1].value) || 0;
-  const vat   = getVatRate();
-  const excl  = qty * price;
-  const vatAmt = excl * vat;
-  const total = excl + vatAmt;
+  const inputs  = row.querySelectorAll('input[type=number]');
+  const primary = parseFloat(inputs[0].value) || 0; // hours or qty
+  const secondary = parseFloat(inputs[1].value) || 0; // rate or price
+  const vat     = getVatRate();
+  const excl    = primary * secondary;
+  const vatAmt  = excl * vat;
   inputs[2].value = excl.toFixed(2);
   inputs[3].value = vatAmt.toFixed(2);
-  inputs[4].value = total.toFixed(2);
+  inputs[4].value = (excl + vatAmt).toFixed(2);
   recalcAll();
 }
 
 function recalcAll() {
-  const rows = document.querySelectorAll('#services-body tr[data-row-id]');
-  let subtotal = 0, vat = 0;
-  rows.forEach(row => {
-    const inputs = row.querySelectorAll('input[type=number]');
-    const qty   = parseFloat(inputs[0].value) || 0;
-    const price = parseFloat(inputs[1].value) || 0;
-    const rate  = getVatRate();
-    const excl  = qty * price;
-    const vatAmt = excl * rate;
+  let subtotal = 0, vatTotal = 0, hoursTotal = 0;
+  document.querySelectorAll('#services-body tr[data-row-id]').forEach(row => {
+    const inputs   = row.querySelectorAll('input[type=number]');
+    const primary  = parseFloat(inputs[0].value) || 0;
+    const secondary = parseFloat(inputs[1].value) || 0;
+    const vat      = getVatRate();
+    const excl     = primary * secondary;
+    const vatAmt   = excl * vat;
     inputs[2].value = excl.toFixed(2);
     inputs[3].value = vatAmt.toFixed(2);
     inputs[4].value = (excl + vatAmt).toFixed(2);
-    subtotal += excl;
-    vat      += vatAmt;
+    subtotal  += excl;
+    vatTotal  += vatAmt;
+    if (billingMode === 'hourly') hoursTotal += primary;
   });
   document.getElementById('t-subtotal').textContent = fmtR(subtotal);
-  document.getElementById('t-vat').textContent      = fmtR(vat);
-  document.getElementById('t-total').textContent    = fmtR(subtotal + vat);
+  document.getElementById('t-vat').textContent      = fmtR(vatTotal);
+  document.getElementById('t-total').textContent    = fmtR(subtotal + vatTotal);
+  if (billingMode === 'hourly') {
+    document.getElementById('t-hours').textContent = `${hoursTotal.toFixed(1)} hrs`;
+  }
 }
 
 function fmtR(n) {
-  return 'R ' + n.toLocaleString('en-ZA', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return 'R ' + n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ── Generate ─────────────────────────────────────────────────────────────────
+// ── Generate ───────────────────────────────────────────────────────────────
 async function generateDoc() {
-  const docType = document.querySelector('input[name="doctype"]:checked').value;
-  const isQuote = docType === 'quote';
-
-  // Collect services
+  const isQuote = document.querySelector('input[name="doctype"]:checked').value === 'quote';
+  const isHourly = billingMode === 'hourly';
   const services = [];
+
   document.querySelectorAll('#services-body tr[data-row-id]').forEach(row => {
     const inputs = row.querySelectorAll('input[type=number]');
-    const name = row.querySelector('input[type=text]')?.value?.trim();
-    const desc = row.querySelector('textarea')?.value?.trim() || '';
+    const name   = row.querySelector('input[type=text]')?.value?.trim();
+    const desc   = row.querySelector('textarea')?.value?.trim() || '';
     if (!name) return;
-    services.push({
-      name,
-      description: desc,
-      quantity:   parseFloat(inputs[0].value) || 0,
-      unit_price: parseFloat(inputs[1].value) || 0,
-      tax:        parseFloat(inputs[3].value) || 0,
-      total:      parseFloat(inputs[4].value) || 0,
-    });
+    if (isHourly) {
+      services.push({ name, description: desc,
+        hours: parseFloat(inputs[0].value) || 0,
+        rate:  parseFloat(inputs[1].value) || 0,
+        tax:   parseFloat(inputs[3].value) || 0,
+        total: parseFloat(inputs[4].value) || 0 });
+    } else {
+      services.push({ name, description: desc,
+        quantity:   parseFloat(inputs[0].value) || 0,
+        unit_price: parseFloat(inputs[1].value) || 0,
+        tax:        parseFloat(inputs[3].value) || 0,
+        total:      parseFloat(inputs[4].value) || 0 });
+    }
   });
 
   if (!services.length) { toast('Add at least one line item.', 'error'); return; }
 
-  const subtotal = services.reduce((s,r) => s + r.quantity * r.unit_price, 0);
-  const taxTotal = services.reduce((s,r) => s + r.tax, 0);
-
   const payload = {
     is_quote:       isQuote,
+    billing_mode:   billingMode,
     invoice_number: document.getElementById('doc_number').value,
     issue_date:     document.getElementById('issue_date').value,
     due_date:       document.getElementById('due_date').value,
@@ -727,70 +658,56 @@ async function generateDoc() {
     from_details:   document.getElementById('from_details').value,
     to_details:     document.getElementById('to_details').value,
     services,
-    subtotal,
-    tax:   taxTotal,
-    total: subtotal + taxTotal,
-    bank_details: document.getElementById('bank_details').value,
-    notes:        document.getElementById('notes').value,
+    default_rate:   isHourly ? getDefaultRate() : null,
+    bank_details:   document.getElementById('bank_details').value,
+    notes:          document.getElementById('notes').value,
+    addons:         document.getElementById('addons').value,
   };
 
   document.getElementById('loading').classList.add('active');
-
   try {
-    const res  = await fetch('/generate', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload),
-    });
+    const res  = await fetch('/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (data.success) {
-      // Download
       const a = document.createElement('a');
-      a.href = `/download/${data.filename}`;
-      a.download = data.filename;
-      a.click();
+      a.href = `/download/${data.filename}`; a.download = data.filename; a.click();
       toast(`${data.filename} downloaded!`, 'success');
-
-      // Save to history
-      const entry = {
+      docHistory.unshift({
         filename: data.filename,
         docType:  isQuote ? 'Quote' : 'Invoice',
+        mode:     isHourly ? 'hourly' : 'standard',
         number:   payload.invoice_number,
         client:   payload.to_details.split('\n')[0] || '—',
-        total:    fmtR(payload.total),
+        total:    fmtR(data.total),
+        hours:    data.total_hours ? `${data.total_hours.toFixed(1)} hrs` : null,
         date:     payload.issue_date,
-        ts:       Date.now(),
-      };
-      history.unshift(entry);
-      if (history.length > 50) history.length = 50;
-      localStorage.setItem('inv_history', JSON.stringify(history));
+      });
+      if (docHistory.length > 50) docHistory.length = 50;
+      localStorage.setItem('inv_history', JSON.stringify(docHistory));
       renderHistory();
-    } else {
-      toast(data.error || 'Generation failed', 'error');
-    }
-  } catch(e) {
-    toast('Connection error: ' + e.message, 'error');
-  } finally {
-    document.getElementById('loading').classList.remove('active');
-  }
+    } else { toast(data.error || 'Generation failed', 'error'); }
+  } catch(e) { toast('Connection error: ' + e.message, 'error'); }
+  finally { document.getElementById('loading').classList.remove('active'); }
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
+// ── History ────────────────────────────────────────────────────────────────
 function renderHistory() {
   const el = document.getElementById('history-list');
-  if (!history.length) {
+  if (!docHistory.length) {
     el.innerHTML = '<div style="color:var(--mid);font-size:13px;padding:40px 0;text-align:center">No documents generated yet.</div>';
     return;
   }
-  el.innerHTML = history.map(h => `
+  el.innerHTML = docHistory.map(h => `
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:14px">
         <div style="width:36px;height:36px;border-radius:8px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div>
-          <div style="font-weight:500;font-size:13.5px">${h.docType} ${h.number}</div>
-          <div style="font-size:12px;color:var(--mid)">${h.client} · ${h.date}</div>
+          <div style="font-weight:500;font-size:13.5px">${h.docType} ${h.number}
+            ${h.mode === 'hourly' ? '<span class="badge badge-blue" style="margin-left:6px">Hourly</span>' : ''}
+          </div>
+          <div style="font-size:12px;color:var(--mid)">${h.client} · ${h.date}${h.hours ? ' · ' + h.hours : ''}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
@@ -803,13 +720,84 @@ function renderHistory() {
     </div>`).join('');
 }
 
-// ── Profile ──────────────────────────────────────────────────────────────────
+// ── Rate card ──────────────────────────────────────────────────────────────
+function renderRateCardEditor() {
+  const rc  = getRateCard();
+  const el  = document.getElementById('rate-card-editor');
+  el.innerHTML = rc.map((item, i) => `
+    <div style="display:grid;grid-template-columns:2fr 2fr 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+      <input type="text" value="${item.name}" placeholder="Service name" onchange="updateRcItem(${i},'name',this.value)" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;outline:none">
+      <input type="text" value="${item.desc}" placeholder="Description" onchange="updateRcItem(${i},'desc',this.value)" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;outline:none">
+      <div>
+        <div style="font-size:10px;color:var(--mid);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Typical hrs</div>
+        <input type="number" value="${item.hours}" step="0.5" onchange="updateRcItem(${i},'hours',parseFloat(this.value))" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:13px;width:80px;outline:none;text-align:right">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mid);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Rate (R/hr)</div>
+        <input type="number" value="${item.rate}" step="50" onchange="updateRcItem(${i},'rate',parseFloat(this.value))" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:13px;width:90px;outline:none;text-align:right">
+      </div>
+      <button onclick="removeRcItem(${i})" class="del-btn">${trashIcon()}</button>
+    </div>`).join('');
+}
+
+function updateRcItem(i, key, val) {
+  const rc = getRateCard();
+  rc[i][key] = val;
+  localStorage.setItem('inv_ratecard', JSON.stringify(rc));
+}
+
+function removeRcItem(i) {
+  const rc = getRateCard();
+  rc.splice(i, 1);
+  localStorage.setItem('inv_ratecard', JSON.stringify(rc));
+  renderRateCardEditor();
+}
+
+function addRateCardEntry() {
+  const rc = getRateCard();
+  rc.push({ name: '', desc: '', hours: 1.0, rate: 500 });
+  localStorage.setItem('inv_ratecard', JSON.stringify(rc));
+  renderRateCardEditor();
+}
+
+function saveRateCard() {
+  toast('Rate card saved!', 'success');
+}
+
+function showRateCardPicker() {
+  const rc   = getRateCard();
+  const list = document.getElementById('rc-picker-list');
+  list.innerHTML = rc.map((item, i) => `
+    <div class="rate-card-item" onclick="addFromRateCard(${i})">
+      <div>
+        <div class="rc-name">${item.name}</div>
+        <div class="rc-meta">${item.desc || 'No description'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rc-add">+ Add</div>
+        <div class="rc-meta">${item.hours} hrs · R${item.rate}/hr</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('rc-picker').style.display = 'flex';
+}
+
+function closeRcPicker() {
+  document.getElementById('rc-picker').style.display = 'none';
+}
+
+function addFromRateCard(i) {
+  const rc   = getRateCard();
+  const item = rc[i];
+  addServiceRow(null, { name: item.name, desc: item.desc, hours: item.hours, rate: item.rate });
+  closeRcPicker();
+}
+
+// ── Profile ────────────────────────────────────────────────────────────────
 function saveProfile() {
-  const p = {
+  localStorage.setItem('inv_profile', JSON.stringify({
     from: document.getElementById('saved_from').value,
     bank: document.getElementById('saved_bank').value,
-  };
-  localStorage.setItem('inv_profile', JSON.stringify(p));
+  }));
   toast('Profile saved!', 'success');
 }
 
@@ -818,33 +806,27 @@ function loadProfile() {
   if (p.from) document.getElementById('from_details').value = p.from;
   if (p.bank) document.getElementById('bank_details').value = p.bank;
   if (p.from || p.bank) toast('Profile loaded.', 'success');
-  else toast('No saved profile found. Go to Business Profile to set one.', 'error');
+  else toast('No saved profile — set one in Business Profile.', 'error');
 }
 
-// ── Navigation ───────────────────────────────────────────────────────────────
+// ── Navigation ─────────────────────────────────────────────────────────────
 function showPage(name) {
-  ['create','history','settings'].forEach(p => {
+  ['create','history','settings','ratecard'].forEach(p => {
     document.getElementById(`page-${p}`).style.display = p === name ? '' : 'none';
+    const nav = document.getElementById(`nav-${p}`);
+    if (nav) nav.classList.toggle('active', p === name);
   });
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(`nav-${name}`) &&
-    document.getElementById(`nav-${name}`).classList.add('active');
-  if (name === 'create') {
-    document.querySelector('.nav-item.active') ||
-      document.querySelectorAll('.nav-item')[0].classList.add('active');
-  }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Misc ───────────────────────────────────────────────────────────────────
 function clearForm() {
-  if (!confirm('Clear the form? This cannot be undone.')) return;
+  if (!confirm('Clear the form?')) return;
   document.getElementById('services-body').innerHTML = '';
   rowCounter = 0;
+  ['from_details','to_details','bank_details','notes','addons'].forEach(id =>
+    document.getElementById(id).value = '');
+  renderTableHead();
   addServiceRow(); addServiceRow();
-  document.getElementById('from_details').value = '';
-  document.getElementById('to_details').value = '';
-  document.getElementById('bank_details').value = '';
-  document.getElementById('notes').value = '';
   recalcAll();
 }
 
@@ -852,13 +834,7 @@ function toast(msg, type) {
   const wrap = document.getElementById('toast-wrap');
   const el   = document.createElement('div');
   el.className = `toast ${type || ''}`;
-  el.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      ${type==='success'
-        ? '<polyline points="20 6 9 17 4 12"/>'
-        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
-    </svg>
-    ${msg}`;
+  el.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${type === 'success' ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>'}</svg>${msg}`;
   wrap.appendChild(el);
   setTimeout(() => el.remove(), 3800);
 }
