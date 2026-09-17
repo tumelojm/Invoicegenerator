@@ -176,16 +176,29 @@ def generate_pdf(inv, is_quote=False, billing_mode='standard'):
     story.append(Spacer(1, 6*mm))
 
     # Services table
+    has_tax = inv.get('tax', 0) > 0
+
     if is_hourly:
-        col_w = [w*0.38, w*0.10, w*0.13, w*0.13, w*0.13, w*0.13]
-        header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('HOURS', st['th']),
-                      Paragraph('RATE/HR', st['th']), Paragraph('EXCL. VAT', st['th']),
-                      Paragraph('VAT', st['th']), Paragraph('TOTAL', st['th'])]
+        if has_tax:
+            col_w      = [w*0.38, w*0.10, w*0.13, w*0.13, w*0.13, w*0.13]
+            header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('HOURS', st['th']),
+                          Paragraph('RATE/HR', st['th']), Paragraph('EXCL. VAT', st['th']),
+                          Paragraph('VAT', st['th']), Paragraph('TOTAL', st['th'])]
+        else:
+            col_w      = [w*0.40, w*0.12, w*0.16, w*0.16, w*0.16]
+            header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('HOURS', st['th']),
+                          Paragraph('RATE/HR', st['th']), Paragraph('SUBTOTAL', st['th']),
+                          Paragraph('TOTAL', st['th'])]
     else:
-        col_w = [w*0.38, w*0.10, w*0.14, w*0.12, w*0.13, w*0.13]
-        header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('QTY', st['th']),
-                      Paragraph('UNIT PRICE', st['th']), Paragraph('EXCL. VAT', st['th']),
-                      Paragraph('VAT', st['th']), Paragraph('TOTAL', st['th'])]
+        if has_tax:
+            col_w      = [w*0.38, w*0.10, w*0.14, w*0.12, w*0.13, w*0.13]
+            header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('QTY', st['th']),
+                          Paragraph('UNIT PRICE', st['th']), Paragraph('EXCL. VAT', st['th']),
+                          Paragraph('VAT', st['th']), Paragraph('TOTAL', st['th'])]
+        else:
+            col_w      = [w*0.42, w*0.12, w*0.23, w*0.23]
+            header_row = [Paragraph('DESCRIPTION', st['th']), Paragraph('QTY', st['th']),
+                          Paragraph('UNIT PRICE', st['th']), Paragraph('TOTAL', st['th'])]
 
     rows = [header_row]
     for svc in inv.get('services', []):
@@ -197,18 +210,29 @@ def generate_pdf(inv, is_quote=False, billing_mode='standard'):
             hours    = svc.get('hours', 0)
             rate     = svc.get('rate', 0)
             excl_vat = hours * rate
-            rows.append([desc_parts, Paragraph(_fmt_hrs(hours), st['td_num']),
-                         Paragraph(_fmt_zar(rate), st['td_num']),
-                         Paragraph(_fmt_zar(excl_vat), st['td_num']),
-                         Paragraph(_fmt_zar(svc['tax']), st['td_num']),
-                         Paragraph(_fmt_zar(svc['total']), st['td_num'])])
+            if has_tax:
+                rows.append([desc_parts, Paragraph(_fmt_hrs(hours), st['td_num']),
+                             Paragraph(_fmt_zar(rate), st['td_num']),
+                             Paragraph(_fmt_zar(excl_vat), st['td_num']),
+                             Paragraph(_fmt_zar(svc['tax']), st['td_num']),
+                             Paragraph(_fmt_zar(svc['total']), st['td_num'])])
+            else:
+                rows.append([desc_parts, Paragraph(_fmt_hrs(hours), st['td_num']),
+                             Paragraph(_fmt_zar(rate), st['td_num']),
+                             Paragraph(_fmt_zar(excl_vat), st['td_num']),
+                             Paragraph(_fmt_zar(svc['total']), st['td_num'])])
         else:
             excl_vat = svc['unit_price'] * svc['quantity']
-            rows.append([desc_parts, Paragraph(str(svc['quantity']), st['td_num']),
-                         Paragraph(_fmt_zar(svc['unit_price']), st['td_num']),
-                         Paragraph(_fmt_zar(excl_vat), st['td_num']),
-                         Paragraph(_fmt_zar(svc['tax']), st['td_num']),
-                         Paragraph(_fmt_zar(svc['total']), st['td_num'])])
+            if has_tax:
+                rows.append([desc_parts, Paragraph(str(svc['quantity']), st['td_num']),
+                             Paragraph(_fmt_zar(svc['unit_price']), st['td_num']),
+                             Paragraph(_fmt_zar(excl_vat), st['td_num']),
+                             Paragraph(_fmt_zar(svc['tax']), st['td_num']),
+                             Paragraph(_fmt_zar(svc['total']), st['td_num'])])
+            else:
+                rows.append([desc_parts, Paragraph(str(svc['quantity']), st['td_num']),
+                             Paragraph(_fmt_zar(svc['unit_price']), st['td_num']),
+                             Paragraph(_fmt_zar(svc['total']), st['td_num'])])
 
     svc_tbl = Table(rows, colWidths=col_w, repeatRows=1)
     svc_tbl.setStyle(TableStyle([
@@ -228,14 +252,22 @@ def generate_pdf(inv, is_quote=False, billing_mode='standard'):
     # Totals
     totals_rows = []
     if is_hourly and inv.get('total_hours'):
-        totals_rows.append([Paragraph(f"Total: {inv['total_hours']:.1f} hrs @ R{inv.get('default_rate',0):.0f}/hr", st['total_label']),
-                             Paragraph('', st['total_value'])])
-    totals_rows += [
-        [Paragraph('Subtotal (Excl. VAT)', st['total_label']),
-         Paragraph(_fmt_zar(inv['subtotal']), st['total_value'])],
-        [Paragraph('VAT', st['total_label']),
-         Paragraph(_fmt_zar(inv['tax']), st['total_value'])],
-    ]
+        totals_rows.append([
+            Paragraph(f"Total: {inv['total_hours']:.1f} hrs @ R{inv.get('default_rate',0):.0f}/hr", st['total_label']),
+            Paragraph('', st['total_value']),
+        ])
+    if has_tax:
+        totals_rows += [
+            [Paragraph('Subtotal (Excl. VAT)', st['total_label']),
+             Paragraph(_fmt_zar(inv['subtotal']), st['total_value'])],
+            [Paragraph('VAT', st['total_label']),
+             Paragraph(_fmt_zar(inv['tax']), st['total_value'])],
+        ]
+    else:
+        totals_rows.append([
+            Paragraph('Subtotal', st['total_label']),
+            Paragraph(_fmt_zar(inv['subtotal']), st['total_value']),
+        ])
     totals_inner = Table(totals_rows, colWidths=[50*mm, 35*mm])
     totals_inner.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
